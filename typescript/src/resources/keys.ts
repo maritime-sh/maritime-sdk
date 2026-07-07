@@ -1,6 +1,35 @@
 import type { HttpClient } from '../http.js'
 import type { ApiKey, CreatedApiKey, CreateApiKeyParams } from '../types.js'
 
+/** Raw /api/v1/keys response — this endpoint serializes snake_case (unlike the
+ * rest of the API, which is camelCase). We normalize it below so the SDK
+ * presents one consistent camelCase shape. */
+interface RawApiKey {
+  id: string
+  name: string
+  key_prefix: string
+  scopes: string[]
+  is_active: boolean
+  last_used_at: string | null
+  expires_at: string | null
+  created_at: string
+  raw_key?: string
+}
+
+function normalize(k: RawApiKey): CreatedApiKey {
+  return {
+    id: k.id,
+    name: k.name,
+    keyPrefix: k.key_prefix,
+    scopes: k.scopes,
+    isActive: k.is_active,
+    lastUsedAt: k.last_used_at,
+    expiresAt: k.expires_at,
+    createdAt: k.created_at,
+    rawKey: k.raw_key as string,
+  }
+}
+
 /**
  * Manage API keys (`mk_...`) programmatically. Access via `maritime.keys`.
  *
@@ -12,9 +41,9 @@ import type { ApiKey, CreatedApiKey, CreateApiKeyParams } from '../types.js'
 export class KeysResource {
   constructor(private readonly http: HttpClient) {}
 
-  /** Mint a new key. The raw key is returned once — store it immediately. */
+  /** Mint a new key. The raw key (`rawKey`) is returned once — store it now. */
   async create(params: CreateApiKeyParams): Promise<CreatedApiKey> {
-    return this.http.request<CreatedApiKey>({
+    const raw = await this.http.request<RawApiKey>({
       method: 'POST',
       path: '/api/v1/keys',
       body: {
@@ -23,11 +52,13 @@ export class KeysResource {
         expires_in_days: params.expiresInDays,
       },
     })
+    return normalize(raw)
   }
 
   /** List the caller's keys (raw values are never returned again). */
   async list(): Promise<ApiKey[]> {
-    return this.http.request<ApiKey[]>({ method: 'GET', path: '/api/v1/keys' })
+    const raw = await this.http.request<RawApiKey[]>({ method: 'GET', path: '/api/v1/keys' })
+    return raw.map(normalize)
   }
 
   /** Revoke a key by id. */

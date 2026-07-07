@@ -1,6 +1,6 @@
 {
   "name": "maritime-sdk",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Official TypeScript SDK for Maritime — provision and drive AI agents on Maritime's serverless infrastructure from your own backend.",
   "keywords": [
     "maritime",

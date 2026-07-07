@@ -41,6 +41,10 @@ agent = client.agents.provision(
 reply = client.agents.chat(agent["id"], "Hello!")["response"]
 ```
 
+## Examples
+
+Runnable, copy-paste examples for both languages live in [`examples/`](examples) — provision-on-signup, Express / FastAPI / Next.js chat APIs, a webhook receiver with signature verification, scoped keys, and per-customer secrets. Every one is verified to compile against the published packages.
+
 ## Docs
 
 - Guide: <https://maritime.sh/docs/build>
