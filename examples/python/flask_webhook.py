@@ -30,12 +30,11 @@ if len(sys.argv) > 1 and sys.argv[1] == "register":
     sys.exit(0)
 
 # --- 2. the receiver -------------------------------------------------------
-# Fail closed: an empty secret would verify every forged request (HMAC with an
-# empty key is attacker-computable), silently disabling the check.
-_secret = os.environ.get("MARITIME_WEBHOOK_SECRET")
-if not _secret:
+# Fail closed: never verify against an empty secret.
+SECRET = os.environ.get("MARITIME_WEBHOOK_SECRET")
+if not SECRET:
     raise RuntimeError("MARITIME_WEBHOOK_SECRET is required to verify signatures")
-SECRET: str = _secret
+
 app = Flask(__name__)
 
 
@@ -49,9 +48,9 @@ def receive():
     event = request.get_json()
     # { "event": "agent.error", "agent_id": ..., "external_id": ..., "data": {...} }
     if event["event"] == "agent.error":
-        print(f"⚠️  agent for {event['external_id']} errored — notify the customer")
+        print(f"agent for {event['external_id']} errored — notify the customer")
     elif event["event"] == "agent.deployed":
-        print(f"✅ agent for {event['external_id']} is ready")
+        print(f"agent for {event['external_id']} is ready")
     else:
         print("event:", event["event"], "for", event["external_id"])
     return "ok", 200

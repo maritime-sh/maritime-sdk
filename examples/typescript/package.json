@@ -4,9 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Runnable examples for maritime-sdk",
-  "scripts": {
-    "typecheck": "tsc --noEmit"
-  },
+  "scripts": { "typecheck": "tsc --noEmit" },
   "dependencies": {
     "express": "^4.19.2",
     "maritime-sdk": "^0.2.2"

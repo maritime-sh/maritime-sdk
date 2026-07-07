@@ -23,5 +23,5 @@ const worker = await maritime.keys.create({
 console.log('worker key (shown once — store it now):', worker.rawKey)
 console.log('scopes:', worker.scopes)
 
-// Now hand `worker.rawKey` to your worker process as its MARITIME_API_KEY.
+// Hand `worker.rawKey` to your worker process as its MARITIME_API_KEY.
 // It can chat to agents but a leak can't drain your account or delete agents.

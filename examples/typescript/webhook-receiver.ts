@@ -32,10 +32,11 @@ if (process.argv[2] === 'register') {
 }
 
 // --- 2. the receiver -------------------------------------------------------
-// Fail closed: an empty secret would verify every forged request (HMAC with an
-// empty key is attacker-computable), silently disabling the check.
+// Fail closed: never verify against an empty secret (an attacker could forge a
+// matching signature over the empty key).
 const SECRET = process.env.MARITIME_WEBHOOK_SECRET
 if (!SECRET) throw new Error('MARITIME_WEBHOOK_SECRET is required to verify signatures')
+
 const app = express()
 
 // Use the RAW body — the signature is computed over the exact bytes we sent.
@@ -51,10 +52,10 @@ app.post('/maritime/webhook', express.raw({ type: 'application/json' }), (req, r
   // { event: 'agent.error', agent_id, external_id, timestamp, data: {...} }
   switch (event.event) {
     case 'agent.error':
-      console.log(`⚠️  agent for ${event.external_id} errored — notify the customer`)
+      console.log(`agent for ${event.external_id} errored — notify the customer`)
       break
     case 'agent.deployed':
-      console.log(`✅ agent for ${event.external_id} is ready`)
+      console.log(`agent for ${event.external_id} is ready`)
       break
     default:
       console.log('event:', event.event, 'for', event.external_id)

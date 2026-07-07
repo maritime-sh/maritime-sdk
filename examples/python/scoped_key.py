@@ -18,6 +18,7 @@ worker = client.keys.create(
     scopes=["deploy"],  # chat/start/stop only — cannot create, delete, or read secrets
 )
 
+# The Python SDK returns the raw API JSON (this endpoint is snake_case).
 print("worker key (shown once — store it now):", worker["raw_key"])
 print("scopes:", worker["scopes"])
 

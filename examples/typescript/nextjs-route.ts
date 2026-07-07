@@ -20,8 +20,8 @@ export async function POST(req: Request) {
     template: 'openclaw',
   })
 
-  // chat() resolves with { response, error? } even on a delivery failure (agent
-  // still deploying, LLM error) — surface that instead of returning reply: null.
+  // chat() resolves with { response, error? } and does not throw on a delivery
+  // failure — return a 502 instead of a silent { reply: null }.
   const { response, error } = await maritime.agents.chat(agent.id, message)
   if (error || response == null) {
     return Response.json({ error: error ?? 'chat failed' }, { status: 502 })
