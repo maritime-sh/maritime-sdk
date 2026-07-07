@@ -1,0 +1,55 @@
+{
+  "name": "maritime-sdk",
+  "version": "0.2.1",
+  "description": "Official TypeScript SDK for Maritime — provision and drive AI agents on Maritime's serverless infrastructure from your own backend.",
+  "keywords": [
+    "maritime",
+    "ai",
+    "agents",
+    "sdk",
+    "openclaw",
+    "serverless",
+    "agent-infrastructure"
+  ],
+  "homepage": "https://maritime.sh/docs/build",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mariagorskikh/maritime-sdk.git",
+    "directory": "typescript"
+  },
+  "bugs": {
+    "url": "https://github.com/mariagorskikh/maritime-sdk/issues"
+  },
+  "license": "MIT",
+  "author": "Maritime",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.5"
+  }
+}
