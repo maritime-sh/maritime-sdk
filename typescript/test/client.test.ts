@@ -175,6 +175,40 @@ describe('retry', () => {
   })
 })
 
+describe('keys', () => {
+  it('normalizes the snake_case /api/v1/keys response to camelCase', async () => {
+    // The keys endpoint serializes snake_case (unlike the rest of the API); the
+    // SDK must present a consistent camelCase shape or `.rawKey` is undefined.
+    const { fetchImpl } = mockFetch([{
+      status: 201,
+      body: {
+        id: 'k1', name: 'worker', key_prefix: 'mk_abc', scopes: ['deploy'],
+        is_active: true, last_used_at: null, expires_at: null,
+        created_at: '2026-07-07T00:00:00Z', raw_key: 'mk_secret_value',
+      },
+    }])
+    const m = client(fetchImpl)
+    const key = await m.keys.create({ name: 'worker', scopes: ['deploy'] })
+    expect(key.rawKey).toBe('mk_secret_value')
+    expect(key.keyPrefix).toBe('mk_abc')
+    expect(key.isActive).toBe(true)
+    expect(key.scopes).toEqual(['deploy'])
+    // The snake_case keys must NOT leak through.
+    expect((key as unknown as Record<string, unknown>).raw_key).toBeUndefined()
+  })
+
+  it('normalizes list() too', async () => {
+    const { fetchImpl } = mockFetch([{
+      status: 200,
+      body: [{ id: 'k1', name: 'a', key_prefix: 'mk_x', scopes: ['manage'], is_active: true, last_used_at: null, expires_at: null, created_at: '2026-07-07T00:00:00Z' }],
+    }])
+    const m = client(fetchImpl)
+    const [k] = await m.keys.list()
+    expect(k.keyPrefix).toBe('mk_x')
+    expect(k.isActive).toBe(true)
+  })
+})
+
 describe('webhooks', () => {
   it('create posts url + events and returns the secret', async () => {
     const { fetchImpl, calls } = mockFetch([

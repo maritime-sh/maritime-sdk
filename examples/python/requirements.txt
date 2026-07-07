@@ -1,0 +1,5 @@
+maritime>=0.2.0
+# for the web examples:
+fastapi>=0.110
+uvicorn>=0.29
+flask>=3.0
