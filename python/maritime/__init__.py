@@ -32,6 +32,28 @@ from .errors import (
     MaritimeRateLimitError,
 )
 from .resources import Agents, Keys, Webhooks
+from .types import (
+    Agent,
+    AgentStatus,
+    ApiKey,
+    ApiKeyScope,
+    ChatOptions,
+    ChatResult,
+    CreateAgentParams,
+    CreateApiKeyParams,
+    CreatedApiKey,
+    CreatedWebhook,
+    CreateWebhookParams,
+    EnvVar,
+    EnvVarInput,
+    ListAgentsParams,
+    LogEntry,
+    Template,
+    Tier,
+    Webhook,
+    WebhookEvent,
+    WebhookTestResult,
+)
 
 __version__ = "0.2.0"
 
@@ -45,6 +67,26 @@ __all__ = [
     "MaritimeNotFoundError",
     "MaritimeConflictError",
     "MaritimeRateLimitError",
+    "Template",
+    "Tier",
+    "AgentStatus",
+    "EnvVarInput",
+    "CreateAgentParams",
+    "Agent",
+    "EnvVar",
+    "LogEntry",
+    "ChatResult",
+    "ListAgentsParams",
+    "ChatOptions",
+    "ApiKeyScope",
+    "CreateApiKeyParams",
+    "ApiKey",
+    "CreatedApiKey",
+    "WebhookEvent",
+    "CreateWebhookParams",
+    "Webhook",
+    "CreatedWebhook",
+    "WebhookTestResult",
 ]
 
 
