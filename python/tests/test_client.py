@@ -123,6 +123,30 @@ def test_typed_errors(make_client, status, klass):
         client.agents.get("a1")
 
 
+def test_plain_text_error_exposes_response_detail(monkeypatch):
+    def fail(req, timeout=None):
+        raise urllib.error.HTTPError(
+            req.full_url,
+            502,
+            "Bad Gateway",
+            {"content-type": "text/plain"},
+            io.BytesIO(b"upstream timed out"),
+        )
+
+    monkeypatch.setattr("urllib.request.urlopen", fail)
+    client = Maritime(
+        api_key="mk_test",
+        base_url="https://api.example.test",
+        max_retries=0,
+    )
+
+    with pytest.raises(MaritimeError) as exc:
+        client.agents.list()
+
+    assert exc.value.status == 502
+    assert exc.value.detail == "upstream timed out"
+
+
 def test_error_exposes_status_detail(make_client):
     client, _ = make_client([{"status": 404, "detail": "no such agent"}])
     with pytest.raises(MaritimeNotFoundError) as exc:
