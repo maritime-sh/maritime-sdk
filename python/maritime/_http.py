@@ -127,10 +127,15 @@ class HttpClient:
     @staticmethod
     def _detail(err: urllib.error.HTTPError) -> str:
         try:
-            payload = json.loads(err.read().decode("utf-8"))
+            raw = err.read()
+            text = raw.decode("utf-8", "replace")
+            try:
+                payload = json.loads(text)
+            except ValueError:
+                return text or f"Request failed with status {err.code}"
             if isinstance(payload, dict) and "detail" in payload:
                 d = payload["detail"]
                 return d if isinstance(d, str) else json.dumps(d)
+            return text or f"Request failed with status {err.code}"
         except Exception:  # noqa: BLE001
-            pass
-        return f"Request failed with status {err.code}"
+            return f"Request failed with status {err.code}"
