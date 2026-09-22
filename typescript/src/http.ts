@@ -159,7 +159,11 @@ export class HttpClient {
     const retryAfter = res?.headers.get('retry-after')
     if (retryAfter) {
       const secs = Number(retryAfter)
-      if (!Number.isNaN(secs)) return Math.min(secs * 1000, 20_000)
+      if (!Number.isNaN(secs)) return Math.min(Math.max(secs * 1000, 0), 20_000)
+
+      // Retry-After also permits an HTTP-date (RFC 9110 §10.2.3).
+      const retryAt = Date.parse(retryAfter)
+      if (!Number.isNaN(retryAt)) return Math.min(Math.max(retryAt - Date.now(), 0), 20_000)
     }
     return Math.min(500 * 2 ** attempt, 8_000)
   }
