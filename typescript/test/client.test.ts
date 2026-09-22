@@ -167,6 +167,31 @@ describe('retry', () => {
     expect(calls.length).toBe(1)
   })
 
+  it('honours an HTTP-date Retry-After header', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-22T00:00:00Z'))
+    try {
+      const { fetchImpl, calls } = mockFetch([
+        {
+          status: 503,
+          body: { detail: 'unavailable' },
+          headers: { 'retry-after': 'Tue, 22 Sep 2026 00:00:10 GMT' },
+        },
+        { status: 200, body: [{ id: 'ok' }] },
+      ])
+      const m = client(fetchImpl, { maxRetries: 1 })
+      const request = m.agents.list()
+
+      await vi.advanceTimersByTimeAsync(9_999)
+      expect(calls.length).toBe(1)
+      await vi.advanceTimersByTimeAsync(1)
+      await expect(request).resolves.toEqual([{ id: 'ok' }])
+      expect(calls.length).toBe(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('gives up after maxRetries on persistent 503', async () => {
     const { fetchImpl, calls } = mockFetch([{ status: 503, body: { detail: 'down' } }])
     const m = client(fetchImpl, { maxRetries: 2 })
