@@ -35,6 +35,6 @@ def chat(body: ChatIn):
         if result.get("error"):
             raise HTTPException(status_code=502, detail=result["error"])
         return {"reply": result["response"]}
-    except MaritimePaymentRequiredError:
-        # Your Maritime wallet needs funding.
-        raise HTTPException(status_code=402, detail="agent hosting wallet is empty")
+    except MaritimePaymentRequiredError as err:
+        # A Maritime plan limit blocked the action; err.detail says which.
+        raise HTTPException(status_code=402, detail=str(err.detail))

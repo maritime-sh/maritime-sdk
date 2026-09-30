@@ -1,4 +1,4 @@
-maritime>=0.2.0
+maritime>=0.8.0
 # for the web examples:
 fastapi>=0.110
 uvicorn>=0.29

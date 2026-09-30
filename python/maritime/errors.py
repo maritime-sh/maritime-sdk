@@ -31,7 +31,19 @@ class MaritimeAuthError(MaritimeAPIError):
 
 
 class MaritimePaymentRequiredError(MaritimeAPIError):
-    """402 — the account wallet needs funding before this action can proceed."""
+    """402, a billing gate blocked the action.
+
+    The plan's machine limit is reached, the action needs a paid add-on, or
+    the plan lapsed. Upgrade or renew at maritime.sh/billing.
+
+    One plan covers everything the account runs. A machine is one micro-VM,
+    and an agent and a Computer each take one slot, so the same gate answers
+    both.
+
+    The error detail is the server's sentence verbatim: it names the fix and
+    carries the billing link, so surface it unchanged. One status covers
+    several distinct gates and only the message says which one closed.
+    """
 
 
 class MaritimeNotFoundError(MaritimeAPIError):

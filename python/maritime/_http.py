@@ -54,16 +54,27 @@ class HttpClient:
         query: Optional[Dict[str, Any]] = None,
         body: Optional[Any] = None,
         idempotent: Optional[bool] = None,
+        headers: Optional[Dict[str, str]] = None,
+        binary: bool = False,
+        raw_body: Optional[bytes] = None,
     ) -> Any:
+        """``raw_body`` sends pre-encoded bytes as-is (multipart uploads);
+        the caller supplies the matching Content-Type via ``headers``.
+        Mutually exclusive with ``body``."""
         url = self._url(path, query)
         data = None
-        headers = {
+        req_headers = {
             "Authorization": f"Bearer {self._api_key}",
             "Accept": "application/json",
             "User-Agent": "maritime-python-sdk",
         }
-        headers.update(self._default_headers)
-        if body is not None:
+        req_headers.update(self._default_headers)
+        if headers:
+            req_headers.update(headers)
+        headers = req_headers
+        if raw_body is not None:
+            data = raw_body
+        elif body is not None:
             data = json.dumps(body).encode("utf-8")
             headers["Content-Type"] = "application/json"
 
@@ -75,7 +86,10 @@ class HttpClient:
             req = urllib.request.Request(url, data=data, headers=headers, method=method)
             try:
                 with urllib.request.urlopen(req, timeout=self._timeout) as resp:
-                    return self._parse(resp.read(), resp.status)
+                    raw = resp.read()
+                    if binary:
+                        return raw
+                    return self._parse(raw, resp.status)
             except urllib.error.HTTPError as e:
                 status = e.code
                 detail = self._detail(e)

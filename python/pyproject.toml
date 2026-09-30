@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "maritime"
-version = "0.2.0"
-description = "Official Python SDK for Maritime — provision and drive AI agents on Maritime's serverless infrastructure from your own backend."
+version = "0.8.0"
+description = "Official Python SDK for Maritime: provision and drive AI agents on Maritime's serverless infrastructure from your own backend."
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"
@@ -27,7 +27,7 @@ classifiers = [
 [project.urls]
 Homepage = "https://maritime.sh"
 Documentation = "https://maritime.sh/docs/build"
-Repository = "https://github.com/mariagorskikh/maritime-sdk"
+Repository = "https://github.com/maritime-sh/maritime-sdk"
 
 [project.optional-dependencies]
 dev = ["pytest>=7"]

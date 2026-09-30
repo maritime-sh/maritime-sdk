@@ -92,6 +92,23 @@ def test_create_body_camelcase(make_client):
     assert body["initialEnvVars"] == [{"key": "F", "value": "b", "isSecret": True}]
 
 
+def test_create_web_service_fields(make_client):
+    client, t = make_client([{"status": 201, "body": {"id": "a1"}}])
+    client.agents.create(
+        "web", image_name="ghcr.io/acme/app:1", exposed_port=7999,
+        public_web=True, health_check_path="/healthz",
+    )
+    body = t.calls[0]["body"]
+    assert body["imageName"] == "ghcr.io/acme/app:1"
+    assert body["exposedPort"] == 7999
+    assert body["publicWeb"] is True
+    assert body["healthCheckPath"] == "/healthz"
+    # Omitted web fields must not appear in the body at all.
+    client.agents.create("plain", template="openclaw")
+    assert "exposedPort" not in t.calls[1]["body"]
+    assert "publicWeb" not in t.calls[1]["body"]
+
+
 def test_chat_conversation_id(make_client):
     client, t = make_client([{"status": 200, "body": {"response": "hi"}}])
     r = client.agents.chat("a1", "hello", conversation_id="c1")
@@ -185,3 +202,40 @@ def test_provision_creates_when_absent(make_client):
     assert a["id"] == "new"
     assert len(t.calls) == 2
     assert t.calls[1]["body"]["templateId"] == "openclaw"
+
+
+def test_identity_reads_inkbox_path(make_client):
+    client, t = make_client([{"status": 200, "body": {
+        "phoneNumber": None,
+        "emailAddress": "maritime-abc@inkboxmail.com",
+        "agentHandle": "maritime-abc",
+        "tunnelHost": "maritime-abc.inkboxwire.com",
+        "smsStatus": None,
+    }}])
+    identity = client.agents.identity("a1")
+    assert t.calls[0]["url"] == "https://api.example.test/api/inkbox/a1"
+    assert identity["emailAddress"] == "maritime-abc@inkboxmail.com"
+    assert identity["phoneNumber"] is None
+
+
+def test_skills_upload_base64_and_needs_input(make_client):
+    client, t = make_client([{"status": 200, "body": {
+        "ok": True, "name": "goplaces", "status": "needs_input",
+        "missing": {"env": ["GOOGLE_PLACES_API_KEY"]},
+    }}])
+    result = client.agents.skills.upload("a1", b"---\nname: goplaces\n---\n", env={"A_KEY": "v"})
+    assert result["status"] == "needs_input"
+    body = t.calls[0]["body"]
+    import base64
+    assert base64.b64decode(body["archiveBase64"]).startswith(b"---")
+    assert body["env"] == {"A_KEY": "v"}
+    assert t.calls[0]["url"] == "https://api.example.test/api/agents/a1/skills/upload"
+
+
+def test_skills_paths_and_binary_export(make_client, monkeypatch):
+    client, t = make_client([{"status": 200, "body": {"ok": True}}])
+    client.agents.skills.install("a1", slug="weather")
+    assert t.calls[0]["url"].endswith("/api/agents/a1/skills/install")
+    client.agents.skills.remove("a1", "weather")
+    assert t.calls[1]["method"] == "DELETE"
+    assert t.calls[1]["url"].endswith("/api/agents/a1/skills/weather")

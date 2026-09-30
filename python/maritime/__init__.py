@@ -31,12 +31,17 @@ from .errors import (
     MaritimePaymentRequiredError,
     MaritimeRateLimitError,
 )
-from .resources import Agents, Keys, Webhooks
+from .resources import Agents, Billing, Keys, Projects, Webhooks
+from .signing import verify_webhook_signature
+from .agent_schedules import observe_scheduler, push_schedules
 
-__version__ = "0.2.0"
+__version__ = "0.6.0"
 
 __all__ = [
+    "observe_scheduler",
+    "push_schedules",
     "Maritime",
+    "verify_webhook_signature",
     "MaritimeError",
     "MaritimeConnectionError",
     "MaritimeAPIError",
@@ -73,7 +78,9 @@ class Maritime:
             default_headers=default_headers,
         )
         self.agents = Agents(self.http)
+        self.billing = Billing(self.http)
         self.keys = Keys(self.http)
+        self.projects = Projects(self.http)
         self.webhooks = Webhooks(self.http)
 
     def request(self, method: str, path: str, **kwargs: Any) -> Any:

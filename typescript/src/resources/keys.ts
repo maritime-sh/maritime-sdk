@@ -9,6 +9,7 @@ interface RawApiKey {
   name: string
   key_prefix: string
   scopes: string[]
+  project_id?: string | null
   is_active: boolean
   last_used_at: string | null
   expires_at: string | null
@@ -22,6 +23,7 @@ function normalize(k: RawApiKey): CreatedApiKey {
     name: k.name,
     keyPrefix: k.key_prefix,
     scopes: k.scopes,
+    projectId: k.project_id ?? null,
     isActive: k.is_active,
     lastUsedAt: k.last_used_at,
     expiresAt: k.expires_at,
@@ -50,6 +52,7 @@ export class KeysResource {
         name: params.name,
         scopes: params.scopes ?? ['provision', 'deploy', 'secrets', 'manage'],
         expires_in_days: params.expiresInDays,
+        project_id: params.projectId,
       },
     })
     return normalize(raw)

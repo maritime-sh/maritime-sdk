@@ -1,7 +1,7 @@
 {
   "name": "maritime-sdk",
-  "version": "0.2.2",
-  "description": "Official TypeScript SDK for Maritime — provision and drive AI agents on Maritime's serverless infrastructure from your own backend.",
+  "version": "0.9.0",
+  "description": "Official TypeScript SDK for Maritime: provision and drive AI agents on Maritime's serverless infrastructure from your own backend.",
   "keywords": [
     "maritime",
     "ai",
@@ -14,11 +14,11 @@
   "homepage": "https://maritime.sh/docs/build",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mariagorskikh/maritime-sdk.git",
+    "url": "git+https://github.com/maritime-sh/maritime-sdk.git",
     "directory": "typescript"
   },
   "bugs": {
-    "url": "https://github.com/mariagorskikh/maritime-sdk/issues"
+    "url": "https://github.com/maritime-sh/maritime-sdk/issues"
   },
   "license": "MIT",
   "author": "Maritime",

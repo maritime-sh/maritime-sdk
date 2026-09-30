@@ -34,7 +34,7 @@ export class MaritimeAPIError extends MaritimeError {
   }
 }
 
-/** 401 / 403 — bad or insufficiently-scoped API key. */
+/** 401 / 403: bad or insufficiently-scoped API key. */
 export class MaritimeAuthError extends MaritimeAPIError {
   constructor(status: number, detail: string, requestId?: string) {
     super(status, detail, requestId)
@@ -42,7 +42,21 @@ export class MaritimeAuthError extends MaritimeAPIError {
   }
 }
 
-/** 402 — the account wallet needs funding before this action can proceed. */
+/**
+ * 402, a billing gate blocked the action: the plan's machine limit is reached,
+ * the action needs a paid add-on, or the plan lapsed.
+ *
+ * One plan covers everything the account runs. A machine is one micro-VM, and
+ * an agent and a Computer each take one slot, so the same gate answers both.
+ *
+ * `detail` is the server's message verbatim and is already a complete
+ * user-ready sentence naming the fix and carrying the billing link, e.g.
+ * "You are on the free plan, which includes 3 agents (you have 3). Delete an
+ * agent you no longer need, or upgrade to a paid plan to create more:
+ * https://maritime.sh/billing". Surface it as-is instead of writing your own
+ * reason: one status covers several distinct gates and only the message says
+ * which one closed.
+ */
 export class MaritimePaymentRequiredError extends MaritimeAPIError {
   constructor(status: number, detail: string, requestId?: string) {
     super(status, detail, requestId)
@@ -50,7 +64,7 @@ export class MaritimePaymentRequiredError extends MaritimeAPIError {
   }
 }
 
-/** 404 — the agent (or other resource) does not exist or is not yours. */
+/** 404: the agent (or other resource) does not exist or is not yours. */
 export class MaritimeNotFoundError extends MaritimeAPIError {
   constructor(status: number, detail: string, requestId?: string) {
     super(status, detail, requestId)
@@ -58,7 +72,7 @@ export class MaritimeNotFoundError extends MaritimeAPIError {
   }
 }
 
-/** 409 — a uniqueness conflict (e.g. an agent with that name already exists). */
+/** 409: a uniqueness conflict (e.g. an agent with that name already exists). */
 export class MaritimeConflictError extends MaritimeAPIError {
   constructor(status: number, detail: string, requestId?: string) {
     super(status, detail, requestId)
@@ -66,7 +80,7 @@ export class MaritimeConflictError extends MaritimeAPIError {
   }
 }
 
-/** 429 — rate limited. */
+/** 429: rate limited. */
 export class MaritimeRateLimitError extends MaritimeAPIError {
   constructor(status: number, detail: string, requestId?: string) {
     super(status, detail, requestId)

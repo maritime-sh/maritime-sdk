@@ -29,9 +29,9 @@ app.post('/chat', async (req, res) => {
     if (error) return res.status(502).json({ error })
     return res.json({ reply: response })
   } catch (err) {
-    // Your Maritime wallet needs funding — surface it distinctly from other errors.
+    // A Maritime plan limit blocked the action; err.detail says which.
     if (err instanceof MaritimePaymentRequiredError) {
-      return res.status(402).json({ error: 'agent hosting wallet is empty' })
+      return res.status(402).json({ error: err.detail })
     }
     console.error(err)
     return res.status(500).json({ error: 'internal error' })

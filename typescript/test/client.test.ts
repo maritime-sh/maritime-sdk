@@ -118,6 +118,69 @@ describe('requests', () => {
     const m = client(fetchImpl)
     await expect(m.agents.delete('a1')).resolves.toBeUndefined()
   })
+
+  it('skills.upload base64-encodes bytes and posts to /skills/upload', async () => {
+    const { fetchImpl, calls } = mockFetch([
+      { status: 200, body: { ok: true, name: 'brief', status: 'active' } },
+    ])
+    const m = client(fetchImpl)
+    const md = new TextEncoder().encode('---\nname: brief\n---\n# hi')
+    const r = await m.agents.skills.upload('a1', { archive: md, env: { FOO_KEY: 'x' } })
+    expect(r.status).toBe('active')
+    expect(calls[0]!.url).toBe('https://api.example.test/api/agents/a1/skills/upload')
+    const body = calls[0]!.body as { archiveBase64: string; env: Record<string, string> }
+    expect(atob(body.archiveBase64)).toContain('name: brief')
+    expect(body.env).toEqual({ FOO_KEY: 'x' })
+  })
+
+  it('skills.install posts slug body and surfaces needs_input', async () => {
+    const { fetchImpl, calls } = mockFetch([
+      {
+        status: 200,
+        body: { ok: true, name: 'goplaces', status: 'needs_input', missing: { env: ['GOOGLE_PLACES_API_KEY'] } },
+      },
+    ])
+    const m = client(fetchImpl)
+    const r = await m.agents.skills.install('a1', { slug: 'goplaces' })
+    expect(r.status).toBe('needs_input')
+    expect(r.missing?.env).toEqual(['GOOGLE_PLACES_API_KEY'])
+    expect(calls[0]!.body).toMatchObject({ slug: 'goplaces' })
+  })
+
+  it('skills.export returns raw bytes and skills.remove hits DELETE', async () => {
+    const gz = new Uint8Array([0x1f, 0x8b, 8, 0])
+    const fetchImpl = (async (url: string | URL, init?: RequestInit) => {
+      if (String(url).endsWith('/export')) {
+        return new Response(gz, { status: 200, headers: { 'content-type': 'application/gzip' } })
+      }
+      expect(init?.method).toBe('DELETE')
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }) as unknown as typeof fetch
+    const m = client(fetchImpl)
+    const bytes = await m.agents.skills.export('a1', 'brief')
+    expect([...bytes.slice(0, 2)]).toEqual([0x1f, 0x8b])
+    await expect(m.agents.skills.remove('a1', 'brief')).resolves.toBeUndefined()
+  })
+
+  it('identity() reads /api/inkbox/{id} and preserves null channels', async () => {
+    const { fetchImpl, calls } = mockFetch([
+      {
+        status: 200,
+        body: {
+          phoneNumber: null,
+          emailAddress: 'maritime-abc@inkboxmail.com',
+          agentHandle: 'maritime-abc',
+          tunnelHost: 'maritime-abc.inkboxwire.com',
+          smsStatus: null,
+        },
+      },
+    ])
+    const m = client(fetchImpl)
+    const id = await m.agents.identity('a1')
+    expect(calls[0]!.url).toBe('https://api.example.test/api/inkbox/a1')
+    expect(id.emailAddress).toBe('maritime-abc@inkboxmail.com')
+    expect(id.phoneNumber).toBeNull()
+  })
 })
 
 describe('typed errors', () => {

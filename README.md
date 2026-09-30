@@ -179,7 +179,7 @@ try {
 | Class | When |
 | --- | --- |
 | `MaritimeAuthError` | `401` / `403` — bad or under-scoped key |
-| `MaritimePaymentRequiredError` | `402` — wallet needs funding |
+| `MaritimePaymentRequiredError` | `402` — a plan limit blocked the action (`.detail` says which) |
 | `MaritimeNotFoundError` | `404` — no such agent (or not yours) |
 | `MaritimeConflictError` | `409` — name already taken |
 | `MaritimeRateLimitError` | `429` |

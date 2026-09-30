@@ -23,8 +23,18 @@ interface RequestOptions {
   path: string
   query?: Record<string, string | number | boolean | undefined | null>
   body?: unknown
+  /** Multipart body (file uploads). Mutually exclusive with `body`; the
+   * runtime's fetch sets the Content-Type boundary itself. */
+  multipart?: FormData
+  /** Raw bytes sent as `application/octet-stream` (file writes). Mutually
+   * exclusive with `body` and `multipart`. */
+  rawBody?: Uint8Array
+  /** Extra headers for this one request (e.g. `Idempotency-Key`). */
+  headers?: Record<string, string>
   /** Override retry behaviour for a single call (e.g. non-idempotent POST). */
   idempotent?: boolean
+  /** Return the raw response bytes (Uint8Array) instead of parsing JSON. */
+  binary?: boolean
 }
 
 const DEFAULT_BASE_URL = 'https://api.maritime.sh'
@@ -96,9 +106,15 @@ export class HttpClient {
       Accept: 'application/json',
       'User-Agent': 'maritime-sdk',
       ...this.defaultHeaders,
+      ...opts.headers,
     }
     const init: RequestInit = { method: opts.method, headers }
-    if (opts.body !== undefined) {
+    if (opts.multipart !== undefined) {
+      init.body = opts.multipart
+    } else if (opts.rawBody !== undefined) {
+      headers['Content-Type'] = 'application/octet-stream'
+      init.body = opts.rawBody as Uint8Array<ArrayBuffer>
+    } else if (opts.body !== undefined) {
       headers['Content-Type'] = 'application/json'
       init.body = JSON.stringify(opts.body)
     }
@@ -133,7 +149,10 @@ export class HttpClient {
       }
       clearTimeout(timer)
 
-      if (res.ok) return (await this.parseBody(res)) as T
+      if (res.ok) {
+        if (opts.binary) return new Uint8Array(await res.arrayBuffer()) as T
+        return (await this.parseBody(res)) as T
+      }
 
       const detail = await this.safeDetail(res)
       const requestId = res.headers.get('x-request-id') ?? undefined
@@ -182,6 +201,12 @@ export class HttpClient {
         const d = (body as { detail: unknown }).detail
         if (typeof d === 'string') return d
         return JSON.stringify(d)
+      }
+      // /api/v1/computers/* errors are {error, message, retryAfterS}: the
+      // message is written for the model that will read it, keep it verbatim.
+      if (body && typeof body === 'object' && 'message' in body) {
+        const m = (body as { message: unknown }).message
+        if (typeof m === 'string' && m) return m
       }
       if (typeof body === 'string' && body) return body
     } catch {
