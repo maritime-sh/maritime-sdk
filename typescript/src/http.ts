@@ -174,15 +174,25 @@ export class HttpClient {
   }
 
   private backoff(attempt: number, res?: Response): number {
-    // Honour Retry-After (seconds) when the server sends it.
+    // Honour Retry-After (seconds or HTTP-date) when the server sends it.
     const retryAfter = res?.headers.get('retry-after')
+
     if (retryAfter) {
       const secs = Number(retryAfter)
-      if (!Number.isNaN(secs)) return Math.min(secs * 1000, 20_000)
+
+      if (!Number.isNaN(secs)) {
+        return Math.min(Math.max(secs * 1000, 0), 20_000)
+      }
+
+      const retryAt = Date.parse(retryAfter)
+
+      if (!Number.isNaN(retryAt)) {
+        return Math.min(Math.max(retryAt - Date.now(), 0), 20_000)
+      }
     }
+
     return Math.min(500 * 2 ** attempt, 8_000)
   }
-
   private async parseBody(res: Response): Promise<unknown> {
     if (res.status === 204) return undefined
     const text = await res.text()
