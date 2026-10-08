@@ -212,10 +212,45 @@ describe('retry', () => {
       { status: 503, body: { detail: 'unavailable' } },
       { status: 200, body: [{ id: 'ok' }] },
     ])
+
     const m = client(fetchImpl, { maxRetries: 2 })
     const r = await m.agents.list()
+
     expect(r).toEqual([{ id: 'ok' }])
     expect(calls.length).toBe(2)
+  })
+
+  it('honors HTTP-date Retry-After on 503', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-08T00:00:00.000Z'))
+
+    try {
+      const retryAt = new Date(Date.now() + 3000).toUTCString()
+
+      const { fetchImpl } = mockFetch([
+        {
+          status: 503,
+          body: { detail: 'unavailable' },
+          headers: { 'Retry-After': retryAt },
+        },
+        {
+          status: 200,
+          body: [{ id: 'ok' }],
+        },
+      ])
+
+      const m = client(fetchImpl, { maxRetries: 1 })
+      const request = m.agents.list()
+
+      await vi.advanceTimersByTimeAsync(2999)
+      expect(fetchImpl).toHaveBeenCalledTimes(1)
+
+      await vi.advanceTimersByTimeAsync(1)
+
+      await expect(request).resolves.toEqual([{ id: 'ok' }])
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('does NOT retry a non-idempotent POST on 500', async () => {
@@ -223,17 +258,27 @@ describe('retry', () => {
       { status: 500, body: { detail: 'server error' } },
       { status: 201, body: { id: 'should-not-happen' } },
     ])
+
     const m = client(fetchImpl, { maxRetries: 3 })
-    await expect(m.agents.create({ name: 'x', template: 'openclaw' })).rejects.toMatchObject({
+
+    await expect(
+      m.agents.create({ name: 'x', template: 'openclaw' }),
+    ).rejects.toMatchObject({
       status: 500,
     })
+
     expect(calls.length).toBe(1)
   })
 
   it('gives up after maxRetries on persistent 503', async () => {
-    const { fetchImpl, calls } = mockFetch([{ status: 503, body: { detail: 'down' } }])
+    const { fetchImpl, calls } = mockFetch([
+      { status: 503, body: { detail: 'down' } },
+    ])
+
     const m = client(fetchImpl, { maxRetries: 2 })
+
     await expect(m.agents.list()).rejects.toMatchObject({ status: 503 })
+
     expect(calls.length).toBe(3) // initial + 2 retries
   })
 })
