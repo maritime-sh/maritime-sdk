@@ -147,25 +147,41 @@ export class HttpClient {
           err,
         )
       }
-      clearTimeout(timer)
+      try {
+        if (res.ok) {
+          if (opts.binary) return new Uint8Array(await res.arrayBuffer()) as T
+          return (await this.parseBody(res)) as T
+        }
 
-      if (res.ok) {
-        if (opts.binary) return new Uint8Array(await res.arrayBuffer()) as T
-        return (await this.parseBody(res)) as T
+        const detail = await this.safeDetail(res, controller.signal)
+        const requestId = res.headers.get('x-request-id') ?? undefined
+        const retryable =
+          attempt < this.maxRetries &&
+          RETRYABLE_STATUS.has(res.status) &&
+          (retrySafe || res.status === 429 || res.status === 503)
+        if (retryable) {
+          lastErr = apiErrorFromStatus(res.status, detail, requestId)
+          clearTimeout(timer)
+          await sleep(this.backoff(attempt, res))
+          continue
+        }
+        throw apiErrorFromStatus(res.status, detail, requestId)
+      } catch (err) {
+        if (err instanceof MaritimeError) throw err
+        lastErr = err
+        if (attempt < this.maxRetries) {
+          clearTimeout(timer)
+          await sleep(this.backoff(attempt))
+          continue
+        }
+        const reason = err instanceof Error ? err.message : String(err)
+        throw new MaritimeConnectionError(
+          `Failed to reach Maritime at ${this.baseUrl}: ${reason}`,
+          err,
+        )
+      } finally {
+        clearTimeout(timer)
       }
-
-      const detail = await this.safeDetail(res)
-      const requestId = res.headers.get('x-request-id') ?? undefined
-      const retryable =
-        attempt < this.maxRetries &&
-        RETRYABLE_STATUS.has(res.status) &&
-        (retrySafe || res.status === 429 || res.status === 503)
-      if (retryable) {
-        lastErr = apiErrorFromStatus(res.status, detail, requestId)
-        await sleep(this.backoff(attempt, res))
-        continue
-      }
-      throw apiErrorFromStatus(res.status, detail, requestId)
     }
 
     // Exhausted retries on a retryable HTTP status.
@@ -194,7 +210,7 @@ export class HttpClient {
     }
   }
 
-  private async safeDetail(res: Response): Promise<string> {
+  private async safeDetail(res: Response, signal?: AbortSignal): Promise<string> {
     try {
       const body = await this.parseBody(res)
       if (body && typeof body === 'object' && 'detail' in body) {
@@ -209,7 +225,8 @@ export class HttpClient {
         if (typeof m === 'string' && m) return m
       }
       if (typeof body === 'string' && body) return body
-    } catch {
+    } catch (err) {
+      if (signal?.aborted) throw err
       /* fall through */
     }
     return `Request failed with status ${res.status}`

@@ -3,6 +3,7 @@ import {
   Maritime,
   MaritimeAuthError,
   MaritimeConflictError,
+  MaritimeConnectionError,
   MaritimeError,
   MaritimeNotFoundError,
   MaritimePaymentRequiredError,
@@ -46,6 +47,22 @@ function mockFetch(
   return { fetchImpl: fetchImpl as unknown as typeof fetch, calls }
 }
 
+function stalledBodyFetch() {
+  return (async (_url: string | URL, init?: RequestInit) => {
+    const signal = init?.signal as AbortSignal
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('{"partial":'))
+        signal.addEventListener('abort', () => controller.error(signal.reason), { once: true })
+      },
+    })
+    return new Response(body, {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }) as unknown as typeof fetch
+}
+
 function client(fetchImpl: typeof fetch, opts = {}) {
   return new Maritime({ apiKey: 'mk_test', baseUrl: 'https://api.example.test', fetch: fetchImpl, ...opts })
 }
@@ -74,6 +91,18 @@ describe('client construction', () => {
 })
 
 describe('requests', () => {
+  it('applies the request timeout while reading a JSON response body', async () => {
+    const m = client(stalledBodyFetch(), { timeout: 10, maxRetries: 0 })
+    await expect(m.agents.list()).rejects.toBeInstanceOf(MaritimeConnectionError)
+  })
+
+  it('applies the request timeout while reading a binary response body', async () => {
+    const m = client(stalledBodyFetch(), { timeout: 10, maxRetries: 0 })
+    await expect(m.agents.skills.export('a1', 'brief')).rejects.toBeInstanceOf(
+      MaritimeConnectionError,
+    )
+  })
+
   it('sends the bearer token and parses JSON', async () => {
     const { fetchImpl, calls } = mockFetch([{ status: 200, body: [{ id: 'a1' }] }])
     const m = client(fetchImpl)
