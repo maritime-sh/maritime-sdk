@@ -134,6 +134,31 @@ result = client.agents.exec(agent["id"], ["ls", "-la", root])
 result["exitCode"], result["stdout"]
 ```
 
+## Computers
+
+One persistent Linux desktop per end user, driven by your own model through
+canonical actions (`screenshot`, `left_click`, `type`, `key`, `scroll`, ...).
+Actions are dicts in the camelCase wire shape. Coordinates are pixels of the
+last screenshot's `width` x `height`.
+
+```python
+computer = client.computers.create(external_user_id=user_id)   # idempotent per user
+shot = client.computers.act(computer["id"], {"action": "screenshot"})
+# ...show shot["imageB64"] (shot["width"] x shot["height"]) to your model...
+client.computers.act(computer["id"], {"action": "left_click", "coordinate": [640, 375]})
+client.computers.act(computer["id"], [{"action": "type", "text": "hi"},
+                                      {"action": "key", "key": "Return"}])  # batch
+print(client.computers.viewer(computer["id"], mode="watch")["url"])  # live view
+client.computers.exec(computer["id"], "uname -a", timeout_s=10)       # <= 30 s
+client.computers.files.write(computer["id"], "/data/notes.txt", "hello")  # 8 MiB cap
+client.computers.close_session(computer["id"])                        # stop billing
+```
+
+`act` raises `MaritimeConflictError` (409) while a person holds the desktop via
+a `control` viewer, `MaritimePaymentRequiredError` (402) when the plan blocks a
+new session, and `MaritimeRateLimitError` (429) at the concurrency cap. Full
+Claude loop: [`examples/python/computer_use_claude.py`](../examples/python/computer_use_claude.py).
+
 ## Projects: one agent per end-user (the front door)
 
 Route your end-users' messages through a project: each ``external_user_id``

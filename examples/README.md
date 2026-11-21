@@ -34,6 +34,7 @@ npx tsx provision-on-signup.ts
 | [`flask_webhook.py`](python/flask_webhook.py) | A Flask receiver that verifies the HMAC signature |
 | [`scoped_key.py`](python/scoped_key.py) | Mint a narrowly-scoped key for a worker |
 | [`manage_secrets.py`](python/manage_secrets.py) | Set per-customer secrets and hot-reload them |
+| [`computer_use_claude.py`](python/computer_use_claude.py) | Claude drives a Maritime desktop through `client.computers` (live viewer link) |
 
 ```bash
 cd python && pip install -r requirements.txt
