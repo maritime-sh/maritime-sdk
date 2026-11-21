@@ -145,6 +145,10 @@ class HttpClient:
             if isinstance(payload, dict) and "detail" in payload:
                 d = payload["detail"]
                 return d if isinstance(d, str) else json.dumps(d)
+            # /api/v1/computers/* errors are {error, message, retryAfterS}: the
+            # message is written for the model that will read it, keep it verbatim.
+            if isinstance(payload, dict) and isinstance(payload.get("message"), str) and payload["message"]:
+                return payload["message"]
         except Exception:  # noqa: BLE001
             pass
         return f"Request failed with status {err.code}"

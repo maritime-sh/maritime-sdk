@@ -67,7 +67,7 @@ class MockTransport:
             raise urllib.error.HTTPError(
                 req.full_url, status, r.get("detail", "err"),
                 {"content-type": "application/json"},
-                io.BytesIO(json.dumps({"detail": r.get("detail", "err")}).encode()),
+                io.BytesIO(json.dumps(r.get("error_body", {"detail": r.get("detail", "err")})).encode()),
             )
         return _Resp(status, r.get("body"), r.get("raw"))
 
@@ -166,6 +166,15 @@ def test_wake_402_raises_payment_required(patch_transport):
     patch_transport([{"status": 402, "detail": "Plan limit reached"}])
     with pytest.raises(MaritimePaymentRequiredError, match="Plan limit"):
         _client().computers.wake("cmp_1")
+
+
+def test_computer_error_message_body_is_surfaced(patch_transport):
+    # /api/v1/computers errors are {error, message, retryAfterS}, not {detail}.
+    body = {"error": "trial_required", "message": "A card is required before any machine starts.",
+            "retryAfterS": None}
+    patch_transport([{"status": 402, "error_body": body}])
+    with pytest.raises(MaritimePaymentRequiredError, match="A card is required"):
+        _client().computers.create(external_user_id="u")
 
 
 def test_sleep_posts(patch_transport):
