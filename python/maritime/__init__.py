@@ -31,6 +31,7 @@ from .errors import (
     MaritimePaymentRequiredError,
     MaritimeRateLimitError,
 )
+from .computers import Computers
 from .resources import Agents, Billing, Keys, Projects, Webhooks
 from .signing import verify_webhook_signature
 from .agent_schedules import observe_scheduler, push_schedules
@@ -79,6 +80,7 @@ class Maritime:
         )
         self.agents = Agents(self.http)
         self.billing = Billing(self.http)
+        self.computers = Computers(self.http)
         self.keys = Keys(self.http)
         self.projects = Projects(self.http)
         self.webhooks = Webhooks(self.http)

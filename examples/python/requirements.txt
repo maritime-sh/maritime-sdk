@@ -1,4 +1,5 @@
 maritime>=0.8.0
+anthropic
 # for the web examples:
 fastapi>=0.110
 uvicorn>=0.29
