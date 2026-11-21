@@ -11,6 +11,9 @@ desktop until it answers. The session is always closed at the end.
 
 Claude's computer toolset uses the same 17 action names as Maritime's canonical
 actions, so translating a call is mostly snake_case -> camelCase key renames.
+
+Sample run (claude-opus-5-5, 1200x750 desktop): first wake 18.2 s, then 12
+actions in 33 s; Claude answered "an Agent Box costs $1 per month per 2 GB".
 """
 import sys
 import time
